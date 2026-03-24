@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: dicehub-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dicehub
+      MYSQL_USER: DiceHub
+      MYSQL_PASSWORD: 040305
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./BackEnd/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      - dicehub-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./BackEnd
+    container_name: dicehub-backend
+    environment:
+      DB_OFICIAL: dicehub
+      DB_TEST: dicehub_test
+      NODE_ENV: development
+      DB_USER: DiceHub
+      DB_PASSWORD: 040305
+      DB_HOST: mysql
+      DB_PORT: 3306
+    ports:
+      - "3000:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - dicehub-network
+    volumes:
+      - ./BackEnd:/app
+
+volumes:
+  mysql-data:
+
+networks:
+  dicehub-network:
